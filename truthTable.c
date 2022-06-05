@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <math.h>
 
 // -------------- STACK ------------------
 typedef struct S_Node
@@ -32,7 +33,18 @@ void enQueue(Queue *queue_ref, char c); // inserts a node in the queue
 char deQueue(Queue *queue_ref); // removes a node form the queue
 void printQueue(Queue *queue_ref); // printing the queue
 // -------------- QUEUE ------------------
+// -------------- LIST -------------------
+typedef struct L_Node
+{
+  char operand;
+  int size;
+  int *arr;
+  struct L_Node *next;
+} LinkedList;
 
+void insertLast(LinkedList **head_ref, char op, int total, int pos);  // insert a new node at the end of the list
+void printList(LinkedList *head_ref);
+// -------------- LIST -------------------
 // -------------- UTIL ------------------
 /* ---------------------------------------------
    |OPERATOR | NAME              | PRECEDENCE  |
@@ -50,21 +62,48 @@ void printQueue(Queue *queue_ref); // printing the queue
 ----------------------------------------*/
 void removeSpaces(char *str); // remove white spaces form string
 int getPrecedence(char op); // gets operator precedence
-int isOperand(char op); // check if the operand is a letter
+int isOperand(char op); // check if the character is a letter
+int countUniqueOperands(char *str); // count how many unique operands are in the expression
 
-void infixToPostfix(char *str); // main function to transform infix expression into postfix
+Queue* infixToPostfix(char *str); // main function to transform infix expression into postfix
 
 int main()
 {
-  char infix[] = "P + ! Q"; // string with the infix expression
+  char infix[] = "! P + ! Q & R"; // string with the infix expression
   removeSpaces(infix); // removing blank spaces
+  int count = countUniqueOperands(infix); // getting the total of operands
 
-  infixToPostfix(infix); // converting the expression
+  Queue *postfix = infixToPostfix(infix); // converting the expression
+
+  LinkedList *operands = NULL;
+
+  int hash[128] = { 0 };
+  int c = 1;
+  for (int i = 0; infix[i]; i++)
+  {
+    if (isOperand(infix[i]))
+      hash[infix[i]] = 1;
+  }
+
+  for (int i = 0; i < 128; i++)
+  {
+    if (hash[i] == 1)
+    {
+      insertLast(&operands, i, count, c);
+      c++;
+    }
+  }
+
+  printList(operands);
+
+  //printQueue(postfix);
+
+  //printf("%d", operands);
 
   return 0;
 }
 
-void infixToPostfix(char *str)
+Queue* infixToPostfix(char *str)
 {
   Stack *stack = NULL; // Initializing the Stack
   Queue* queue = (Queue*)malloc(sizeof(Queue)); // Initializing the Queue
@@ -110,7 +149,7 @@ void infixToPostfix(char *str)
   while (stack != NULL)
     enQueue(queue, pop(&stack));
 
-  printQueue(queue);
+  return queue;
 }
 
 // STACK FUNCTIONS
@@ -200,6 +239,53 @@ void printQueue(Queue *q)
   }
 }
 
+// LIST
+void insertLast(LinkedList **head_ref, char op, int total, int pos)
+{
+  // Creating the new node
+  int max = (int)pow(2, total);
+  LinkedList *node = (LinkedList*)malloc(sizeof(LinkedList));
+  node->operand = op; // operand
+  node->size = max;
+  node->arr = malloc(max * sizeof(int)); // array representing the operand 
+  // fills the array correspondly with the number of operands
+  // 1 - True / 0 - False
+  for (int i = 0; i < max; i++)
+    node->arr[i] = (i & (int)pow(2, (total - pos))) == 0;
+  node->next = NULL;
+
+  LinkedList *last = *head_ref;
+
+  // if the list is empty isernt node
+  if (*head_ref == NULL)
+  {
+    *head_ref = node;
+    return;
+  }
+
+  // else traverse till last node
+  while (last->next != NULL)
+    last = last->next;
+
+  // change the next of last node
+  last->next = node;
+  return;
+}
+
+void printList(LinkedList *head_ref)
+{
+  while (head_ref != NULL)
+  {
+    printf("%c \n", head_ref->operand);
+    for (int i = 0; i < head_ref->size; i++)
+    {
+      printf("%d \n", head_ref->arr[i]);
+    }
+    head_ref = head_ref->next;
+  }
+  printf("\n");
+}
+
 // UTIL
 void removeSpaces(char *str)
 {
@@ -227,4 +313,24 @@ int getPrecedence(char op)
 int isOperand(char op)
 {
   return (op >= 'a' && op <= 'z') || (op >= 'A' && op <= 'Z');
+}
+
+int countUniqueOperands(char *str)
+{
+  int hash[128] = { 0 }; // there is 128 characters in C - each represented by a unique integer value -> ASCII value
+  int c = 0;
+
+  for (int i = 0; str[i]; i++)
+  {
+    // only counting the operads
+    // setting the position corresponding to the ASCII value of str[i] in hash[] to 1
+    if (isOperand(str[i]))
+      hash[str[i]] = 1;
+  }
+
+  // counting the number of 1's in hash[]
+  for (int i = 0; i < 128; i++)
+    c += hash[i];
+
+  return c;
 }
