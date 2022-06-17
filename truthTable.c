@@ -7,14 +7,17 @@
 typedef struct S_Node
 {
   char operator;
+  int *arr;
   struct S_Node *next;
 }Stack;
 
 Stack* newStackNode(char op); // creates new stack node
 void push(Stack **head_ref, char c); // push a node into the stack
+void pushArray(Stack **head_ref, int *arr);
 char pop(Stack **head_ref); // pop the stack
+int* popArray(Stack **head_ref);
 int isEmpty(Stack *head_ref); // check if the stack is empty
-int peek(Stack *head_ref); // return the top element of the stack
+char peek(Stack *head_ref); // return the top element of the stack
 // -------------- STACK ------------------
 // -------------- QUEUE ------------------
 typedef struct Node
@@ -43,6 +46,7 @@ typedef struct L_Node
 } LinkedList;
 
 void insertLast(LinkedList **head_ref, char op, int total, int pos);  // insert a new node at the end of the list
+int* getOperandArray(LinkedList *head_ref, char op);
 void printList(LinkedList *head_ref);
 // -------------- LIST -------------------
 // -------------- UTIL ------------------
@@ -75,7 +79,7 @@ int main()
 
   Queue *postfix = infixToPostfix(infix); // converting the expression
 
-  LinkedList *operands = NULL;
+  LinkedList *operands = NULL; // List of operands with its truth table values
 
   int hash[128] = { 0 };
   int c = 1;
@@ -94,11 +98,32 @@ int main()
     }
   }
 
-  printList(operands);
+  //printList(operands);
 
   //printQueue(postfix);
 
+  Stack *stack = NULL;
+  char op;
+
+  while (postfix->head != NULL)
+  {
+    op = deQueue(postfix);
+    if (isOperand(op))
+      pushArray(&stack, getOperandArray(operands, op));
+  }
+
+  // int *arr = popArray(&stack);
+  // for (int i = 0; i < pow(2, count); i++)
+  //   printf("%d ", arr[i]);
+
+  // int* arr = getOperandArray(operands, 'P');
+
+  // for (int i = 0; i < pow(2, count); i++)
+  //   printf("%d ", arr[i]);
+
   //printf("%d", operands);
+
+
 
   return 0;
 }
@@ -155,7 +180,7 @@ Queue* infixToPostfix(char *str)
 // STACK FUNCTIONS
 Stack* newStackNode(char op)
 {
-  Stack *node = (Stack *)malloc(sizeof(Stack));
+  Stack *node = (Stack*)malloc(sizeof(Stack));
   node->operator = op;
   node->next = NULL;
   return node;
@@ -164,6 +189,14 @@ Stack* newStackNode(char op)
 void push(Stack **head_ref, char c)
 {
   Stack *node = newStackNode(c);
+  node->next = *head_ref;
+  *head_ref = node;
+}
+
+void pushArray(Stack **head_ref, int *arr)
+{
+  Stack *node = (Stack*)malloc(sizeof(Stack));
+  node->arr = arr;
   node->next = *head_ref;
   *head_ref = node;
 }
@@ -180,12 +213,24 @@ char pop(Stack **head_ref)
   return popped;
 }
 
+int* popArray(Stack **head_ref)
+{
+  if (isEmpty(*head_ref))
+    return 0;
+  Stack *temp = *head_ref;
+  *head_ref = (*head_ref)->next;
+  int *popped = temp->arr;
+  free(temp);
+
+  return popped;
+}
+
 int isEmpty(Stack *head_ref)
 {
   return head_ref == NULL;
 }
 
-int peek(Stack *head_ref)
+char peek(Stack *head_ref)
 {
   if (isEmpty(head_ref))
     return 0;
@@ -195,7 +240,7 @@ int peek(Stack *head_ref)
 // QUEUE FUNCTIONS
 Q_Node* newQueueNode(Q_Node *n, char op)
 {
-  n = (Q_Node *)malloc(sizeof(Q_Node));
+  n = (Q_Node*)malloc(sizeof(Q_Node));
   n->operand = op;
   n->next = NULL;
   return n;
@@ -256,7 +301,7 @@ void insertLast(LinkedList **head_ref, char op, int total, int pos)
 
   LinkedList *last = *head_ref;
 
-  // if the list is empty isernt node
+  // if the list is empty insert node
   if (*head_ref == NULL)
   {
     *head_ref = node;
@@ -270,6 +315,20 @@ void insertLast(LinkedList **head_ref, char op, int total, int pos)
   // change the next of last node
   last->next = node;
   return;
+}
+
+int* getOperandArray(LinkedList *head_ref, char op)
+{
+  LinkedList *temp = head_ref;
+  while (temp != NULL)
+  {
+    if (temp->operand == op)
+      return temp->arr;
+
+    temp = temp->next;
+  }
+
+  return 0;
 }
 
 void printList(LinkedList *head_ref)
