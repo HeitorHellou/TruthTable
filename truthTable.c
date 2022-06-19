@@ -13,7 +13,7 @@ typedef struct S_Node
 
 Stack* newStackNode(char op); // creates new stack node
 void push(Stack **head_ref, char c); // push a node into the stack
-void pushArray(Stack **head_ref, int *arr);
+void pushArray(Stack **head_ref, int arr[]);
 char pop(Stack **head_ref); // pop the stack
 int* popArray(Stack **head_ref);
 int isEmpty(Stack *head_ref); // check if the stack is empty
@@ -68,14 +68,20 @@ void removeSpaces(char *str); // remove white spaces form string
 int getPrecedence(char op); // gets operator precedence
 int isOperand(char op); // check if the character is a letter
 int countUniqueOperands(char *str); // count how many unique operands are in the expression
+int* negation(int arr[], int size);
+int* conjunction(int arr[], int arr2[], int size);
+int* disjunction(int arr[], int arr2[], int size);
+int* implication(int arr[], int arr2[], int size);
+int* biconditional(int arr[], int arr2[], int size);
 
 Queue* infixToPostfix(char *str); // main function to transform infix expression into postfix
 
 int main()
 {
-  char infix[] = "! P + ! Q & R"; // string with the infix expression
+  char infix[] = "((((R & S) + (S & (!Q))) > (Q : Q)) & ((!S) : (!P)))"; // string with the infix expression
   removeSpaces(infix); // removing blank spaces
   int count = countUniqueOperands(infix); // getting the total of operands
+  int size = pow(2, count); // number of variables a proposition will have
 
   Queue *postfix = infixToPostfix(infix); // converting the expression
 
@@ -110,20 +116,33 @@ int main()
     op = deQueue(postfix);
     if (isOperand(op))
       pushArray(&stack, getOperandArray(operands, op));
+    else 
+    {
+      switch (op)
+      {
+        case '!':
+          pushArray(&stack, negation(popArray(&stack), size));
+          break;
+        case '&':
+          pushArray(&stack, conjunction(popArray(&stack), popArray(&stack), size));
+          break;
+        case '+':
+          pushArray(&stack, disjunction(popArray(&stack), popArray(&stack), size));
+          break;
+        case '>':
+          pushArray(&stack, implication(popArray(&stack), popArray(&stack), size));
+          break;
+        case ':':
+          pushArray(&stack, biconditional(popArray(&stack), popArray(&stack), size));
+          break;
+      }
+    }
   }
 
-  // int *arr = popArray(&stack);
-  // for (int i = 0; i < pow(2, count); i++)
-  //   printf("%d ", arr[i]);
+  int *res = popArray(&stack);
 
-  // int* arr = getOperandArray(operands, 'P');
-
-  // for (int i = 0; i < pow(2, count); i++)
-  //   printf("%d ", arr[i]);
-
-  //printf("%d", operands);
-
-
+  for (int i = 0; i < size; i++)
+    printf("%d \n", res[i]);
 
   return 0;
 }
@@ -147,6 +166,8 @@ Queue* infixToPostfix(char *str)
     // if the precedence of the operator at the top of the stack is lesser than the scanned character, push into the stack
     // if the precedence of the operator at the top of the stack is greater, pop the stack and add it to the queue than push the scanned operator to the stack
     // repeat it until all characters are read 
+    else if (str[i] == '(')
+      push(&stack, str[i]);
     else 
     {
       if (str[i] == ')')
@@ -158,7 +179,7 @@ Queue* infixToPostfix(char *str)
       }
       else 
       {
-        if (isEmpty(stack) || peek(stack) == '(')
+        if (isEmpty(stack))
           push(&stack, str[i]);
         else if (getPrecedence(str[i]) <= getPrecedence(peek(stack)))
         {
@@ -193,7 +214,7 @@ void push(Stack **head_ref, char c)
   *head_ref = node;
 }
 
-void pushArray(Stack **head_ref, int *arr)
+void pushArray(Stack **head_ref, int arr[])
 {
   Stack *node = (Stack*)malloc(sizeof(Stack));
   node->arr = arr;
@@ -392,4 +413,62 @@ int countUniqueOperands(char *str)
     c += hash[i];
 
   return c;
+}
+
+int* negation(int arr[], int size)
+{
+  for (int i = 0; i < size; i++)
+  {
+    arr[i] = !arr[i];
+  }
+
+  return arr;
+}
+
+int* conjunction(int arr[], int arr2[], int size)
+{
+  int* res = (int*)malloc(size * sizeof(int));
+
+  for (int i = 0; i < size; i++)
+  {
+    res[i] = arr[i] && arr2[i];
+  }
+
+  return res;
+}
+
+int* disjunction(int arr[], int arr2[], int size)
+{
+  int* res = (int*)malloc(size * sizeof(int));
+
+  for (int i = 0; i < size; i++)
+  {
+    res[i] = arr[i] || arr2[i];
+  }
+
+  return res;
+}
+
+int* implication(int arr[], int arr2[], int size)
+{
+  int* res = (int*)malloc(size * sizeof(int));
+
+  for (int i = 0; i < size; i++)
+  {
+    res[i] = !arr[i] || arr2[i];
+  }
+
+  return res;
+}
+
+int* biconditional(int arr[], int arr2[], int size)
+{
+  int* res = (int*)malloc(size * sizeof(int));
+
+  for (int i = 0; i < size; i++)
+  {
+    res[i] = arr[i] == arr2[i];
+  }
+
+  return res;
 }
