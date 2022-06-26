@@ -1,125 +1,70 @@
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <math.h>
+#include <string.h>
 
-// -------------- STACK ------------------
-typedef struct S_Node
-{
-  char operator;
-  int *arr;
-  struct S_Node *next;
-}Stack;
+#include "structures.h"
 
-Stack* newStackNode(char op); // creates new stack node
-void push(Stack **head_ref, char c); // push a node into the stack
-void pushArray(Stack **head_ref, int arr[]);
-char pop(Stack **head_ref); // pop the stack
-int* popArray(Stack **head_ref);
-int isEmpty(Stack *head_ref); // check if the stack is empty
-char peek(Stack *head_ref); // return the top element of the stack
-// -------------- STACK ------------------
-// -------------- QUEUE ------------------
-typedef struct Node
-{
-  char operand;
-  struct Node *next;
-}Q_Node;
-
-typedef struct Queue
-{
-  Q_Node *head, *tail;
-}Queue;
-
-Q_Node* newQueueNode(Q_Node *n, char c); // creates new queue node
-void enQueue(Queue *queue_ref, char c); // inserts a node in the queue
-char deQueue(Queue *queue_ref); // removes a node form the queue
-void printQueue(Queue *queue_ref); // printing the queue
-// -------------- QUEUE ------------------
-// -------------- LIST -------------------
-typedef struct L_Node
-{
-  char operand;
-  int size;
-  int *arr;
-  struct L_Node *next;
-} LinkedList;
-
-void insertLast(LinkedList **head_ref, char op, int total, int pos);  // insert a new node at the end of the list
-int* getOperandArray(LinkedList *head_ref, char op);
-void printList(LinkedList *head_ref);
-// -------------- LIST -------------------
 // -------------- UTIL ------------------
-/* ---------------------------------------------
-   |OPERATOR | NAME              | PRECEDENCE  |
-   ---------------------------------------------
-   |!        | Negation          | 5           |
-   ---------------------------------------------
-   |&        | Conjunction       | 4           |
-   ---------------------------------------------
-   |+        | Disjunction       | 3           |
-   ---------------------------------------------
-   |>        | Implication       | 2           |
-   ---------------------------------------------
-   |:        | Biconditional     | 1           |
-   ---------------------------------------------
-----------------------------------------*/
-void removeSpaces(char *str); // remove white spaces form string
-int getPrecedence(char op); // gets operator precedence
-int isOperand(char op); // check if the character is a letter
-int countUniqueOperands(char *str); // count how many unique operands are in the expression
-int* negation(int arr[], int size);
-int* conjunction(int arr[], int arr2[], int size);
-int* disjunction(int arr[], int arr2[], int size);
-int* implication(int arr[], int arr2[], int size);
-int* biconditional(int arr[], int arr2[], int size);
+void removeSpaces(char *str);                        // remove white spaces form string
+int getPrecedence(char op);                          // gets operator precedence
+int isOperand(char op);                              // check if the character is a letter
+int countUniqueOperands(char *str);                  // count how many unique operands are in the expression
+int *negation(int arr[], int size);                  // perform a negations on the array
+int *conjunction(int arr[], int arr2[], int size);   // perform a conjunction operation on the 2 array variables
+int *disjunction(int arr[], int arr2[], int size);   // perform a disjunction operation on the 2 array variables
+int *implication(int arr[], int arr2[], int size);   // perform a implication operation on the 2 array variables
+int *biconditional(int arr[], int arr2[], int size); // perform a biconditional operation on the 2 array variables
 
-Queue* infixToPostfix(char *str); // main function to transform infix expression into postfix
+Queue *infixToPostfix(char *str); // main function to transform infix expression into postfix
 
 int main()
 {
-  char infix[] = "((((R & S) + (S & (!Q))) > (Q : Q)) & ((!S) : (!P)))"; // string with the infix expression
-  removeSpaces(infix); // removing blank spaces
-  int count = countUniqueOperands(infix); // getting the total of operands
-  int size = pow(2, count); // number of variables a proposition will have
-
-  Queue *postfix = infixToPostfix(infix); // converting the expression
-
-  LinkedList *operands = NULL; // List of operands with its truth table values
-
-  int hash[128] = { 0 };
-  int c = 1;
-  for (int i = 0; infix[i]; i++)
+  int solve = 1;
+  int a = 1;
+  while (solve)
   {
-    if (isOperand(infix[i]))
-      hash[infix[i]] = 1;
-  }
+    char *infix; // string with the infix expression
+    infix = malloc(1024 * sizeof(char));
+    printf("Expression: ");
+    scanf("%[^\n]", infix);
+    infix = realloc(infix, strlen(infix) + 1);
+    removeSpaces(infix);                    // removing blank spaces
+    int count = countUniqueOperands(infix); // getting the total of operands
+    int size = pow(2, count);               // number of variables a proposition will have
 
-  for (int i = 0; i < 128; i++)
-  {
-    if (hash[i] == 1)
+    Queue *postfix = infixToPostfix(infix); // converting the expression
+
+    LinkedList *operands = NULL; // List of operands with its truth table values
+
+    int hash[128] = {0};
+    int c = 1;
+    for (int i = 0; infix[i]; i++)
     {
-      insertLast(&operands, i, count, c);
-      c++;
+      if (isOperand(infix[i]))
+        hash[infix[i]] = 1;
     }
-  }
 
-  //printList(operands);
-
-  //printQueue(postfix);
-
-  Stack *stack = NULL;
-  char op;
-
-  while (postfix->head != NULL)
-  {
-    op = deQueue(postfix);
-    if (isOperand(op))
-      pushArray(&stack, getOperandArray(operands, op));
-    else 
+    for (int i = 0; i < 128; i++)
     {
-      switch (op)
+      if (hash[i] == 1)
       {
+        insertLast(&operands, i, count, c); // Setting up each variable value
+        c++;
+      }
+    }
+
+    Stack *stack = NULL;
+    char op;
+    // perform operations
+    while (postfix->head != NULL)
+    {
+      op = deQueue(postfix);
+      // if its an operand add to the stack
+      if (isOperand(op))
+        pushArray(&stack, getOperandArray(operands, op));
+      // if its an operator perform the operations
+      else
+      {
+        switch (op)
+        {
         case '!':
           pushArray(&stack, negation(popArray(&stack), size));
           break;
@@ -135,22 +80,28 @@ int main()
         case ':':
           pushArray(&stack, biconditional(popArray(&stack), popArray(&stack), size));
           break;
+        }
       }
     }
+
+    int *res = popArray(&stack); // getting the final result array from the stack
+
+    // printing the answer
+    for (int i = 0; i < size; i++)
+      printf("%d \n", res[i]);
+
+    fflush(stdin);
+    printf("Press ENTER key to Continue\n");
+    getchar();
   }
-
-  int *res = popArray(&stack);
-
-  for (int i = 0; i < size; i++)
-    printf("%d \n", res[i]);
 
   return 0;
 }
 
-Queue* infixToPostfix(char *str)
+Queue *infixToPostfix(char *str)
 {
-  Stack *stack = NULL; // Initializing the Stack
-  Queue* queue = (Queue*)malloc(sizeof(Queue)); // Initializing the Queue
+  Stack *stack = NULL;                           // Initializing the Stack
+  Queue *queue = (Queue *)malloc(sizeof(Queue)); // Initializing the Queue
   queue->head = NULL;
   queue->tail = NULL;
 
@@ -165,10 +116,10 @@ Queue* infixToPostfix(char *str)
     // it its a ')' pop everything until you find a '('
     // if the precedence of the operator at the top of the stack is lesser than the scanned character, push into the stack
     // if the precedence of the operator at the top of the stack is greater, pop the stack and add it to the queue than push the scanned operator to the stack
-    // repeat it until all characters are read 
+    // repeat it until all characters are read
     else if (str[i] == '(')
       push(&stack, str[i]);
-    else 
+    else
     {
       if (str[i] == ')')
       {
@@ -177,7 +128,7 @@ Queue* infixToPostfix(char *str)
 
         pop(&stack);
       }
-      else 
+      else
       {
         if (isEmpty(stack))
           push(&stack, str[i]);
@@ -186,7 +137,7 @@ Queue* infixToPostfix(char *str)
           enQueue(queue, pop(&stack));
           push(&stack, str[i]);
         }
-        else 
+        else
           push(&stack, str[i]);
       }
     }
@@ -198,179 +149,11 @@ Queue* infixToPostfix(char *str)
   return queue;
 }
 
-// STACK FUNCTIONS
-Stack* newStackNode(char op)
-{
-  Stack *node = (Stack*)malloc(sizeof(Stack));
-  node->operator = op;
-  node->next = NULL;
-  return node;
-}
-
-void push(Stack **head_ref, char c)
-{
-  Stack *node = newStackNode(c);
-  node->next = *head_ref;
-  *head_ref = node;
-}
-
-void pushArray(Stack **head_ref, int arr[])
-{
-  Stack *node = (Stack*)malloc(sizeof(Stack));
-  node->arr = arr;
-  node->next = *head_ref;
-  *head_ref = node;
-}
-
-char pop(Stack **head_ref)
-{
-  if (isEmpty(*head_ref))
-    return 0;
-  Stack *temp = *head_ref;
-  *head_ref = (*head_ref)->next;
-  char popped = temp->operator;
-  free(temp);
-
-  return popped;
-}
-
-int* popArray(Stack **head_ref)
-{
-  if (isEmpty(*head_ref))
-    return 0;
-  Stack *temp = *head_ref;
-  *head_ref = (*head_ref)->next;
-  int *popped = temp->arr;
-  free(temp);
-
-  return popped;
-}
-
-int isEmpty(Stack *head_ref)
-{
-  return head_ref == NULL;
-}
-
-char peek(Stack *head_ref)
-{
-  if (isEmpty(head_ref))
-    return 0;
-  return head_ref->operator;
-}
-
-// QUEUE FUNCTIONS
-Q_Node* newQueueNode(Q_Node *n, char op)
-{
-  n = (Q_Node*)malloc(sizeof(Q_Node));
-  n->operand = op;
-  n->next = NULL;
-  return n;
-}
-
-void enQueue(Queue *queue_ref, char c)
-{
-  Q_Node *node = NULL;
-  node = newQueueNode(node, c);
-  if (queue_ref->tail == NULL) 
-  {
-    queue_ref->head = queue_ref->tail = node;
-    return;
-  }
-    
-  queue_ref->tail->next = node;
-  queue_ref->tail = node;
-}
-
-char deQueue(Queue* queue_ref)
-{
-  if (queue_ref->head == NULL)
-    return ':';
-
-  char operand = queue_ref->head->operand;
-  queue_ref->head = queue_ref->head->next;
-
-  if (queue_ref->head == NULL)
-    queue_ref->tail = NULL;
-
-  return operand;
-}
-
-void printQueue(Queue *q)
-{
-  Q_Node *temp = q->head;
-  while (temp != NULL)
-  {
-    printf("%c", temp->operand);
-    temp = temp->next;
-  }
-}
-
-// LIST
-void insertLast(LinkedList **head_ref, char op, int total, int pos)
-{
-  // Creating the new node
-  int max = (int)pow(2, total);
-  LinkedList *node = (LinkedList*)malloc(sizeof(LinkedList));
-  node->operand = op; // operand
-  node->size = max;
-  node->arr = malloc(max * sizeof(int)); // array representing the operand 
-  // fills the array correspondly with the number of operands
-  // 1 - True / 0 - False
-  for (int i = 0; i < max; i++)
-    node->arr[i] = (i & (int)pow(2, (total - pos))) == 0;
-  node->next = NULL;
-
-  LinkedList *last = *head_ref;
-
-  // if the list is empty insert node
-  if (*head_ref == NULL)
-  {
-    *head_ref = node;
-    return;
-  }
-
-  // else traverse till last node
-  while (last->next != NULL)
-    last = last->next;
-
-  // change the next of last node
-  last->next = node;
-  return;
-}
-
-int* getOperandArray(LinkedList *head_ref, char op)
-{
-  LinkedList *temp = head_ref;
-  while (temp != NULL)
-  {
-    if (temp->operand == op)
-      return temp->arr;
-
-    temp = temp->next;
-  }
-
-  return 0;
-}
-
-void printList(LinkedList *head_ref)
-{
-  while (head_ref != NULL)
-  {
-    printf("%c \n", head_ref->operand);
-    for (int i = 0; i < head_ref->size; i++)
-    {
-      printf("%d \n", head_ref->arr[i]);
-    }
-    head_ref = head_ref->next;
-  }
-  printf("\n");
-}
-
 // UTIL
 void removeSpaces(char *str)
 {
-  char* temp = str;
-  do 
+  char *temp = str;
+  do
   {
     while (*temp == ' ')
       ++temp;
@@ -397,7 +180,7 @@ int isOperand(char op)
 
 int countUniqueOperands(char *str)
 {
-  int hash[128] = { 0 }; // there is 128 characters in C - each represented by a unique integer value -> ASCII value
+  int hash[128] = {0}; // there is 128 characters in C - each represented by a unique integer value -> ASCII value
   int c = 0;
 
   for (int i = 0; str[i]; i++)
@@ -415,7 +198,7 @@ int countUniqueOperands(char *str)
   return c;
 }
 
-int* negation(int arr[], int size)
+int *negation(int arr[], int size)
 {
   for (int i = 0; i < size; i++)
   {
@@ -425,9 +208,9 @@ int* negation(int arr[], int size)
   return arr;
 }
 
-int* conjunction(int arr[], int arr2[], int size)
+int *conjunction(int arr[], int arr2[], int size)
 {
-  int* res = (int*)malloc(size * sizeof(int));
+  int *res = (int *)malloc(size * sizeof(int));
 
   for (int i = 0; i < size; i++)
   {
@@ -437,9 +220,9 @@ int* conjunction(int arr[], int arr2[], int size)
   return res;
 }
 
-int* disjunction(int arr[], int arr2[], int size)
+int *disjunction(int arr[], int arr2[], int size)
 {
-  int* res = (int*)malloc(size * sizeof(int));
+  int *res = (int *)malloc(size * sizeof(int));
 
   for (int i = 0; i < size; i++)
   {
@@ -449,9 +232,9 @@ int* disjunction(int arr[], int arr2[], int size)
   return res;
 }
 
-int* implication(int arr[], int arr2[], int size)
+int *implication(int arr[], int arr2[], int size)
 {
-  int* res = (int*)malloc(size * sizeof(int));
+  int *res = (int *)malloc(size * sizeof(int));
 
   for (int i = 0; i < size; i++)
   {
@@ -461,9 +244,9 @@ int* implication(int arr[], int arr2[], int size)
   return res;
 }
 
-int* biconditional(int arr[], int arr2[], int size)
+int *biconditional(int arr[], int arr2[], int size)
 {
-  int* res = (int*)malloc(size * sizeof(int));
+  int *res = (int *)malloc(size * sizeof(int));
 
   for (int i = 0; i < size; i++)
   {
